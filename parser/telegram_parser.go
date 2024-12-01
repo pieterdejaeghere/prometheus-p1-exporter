@@ -10,6 +10,7 @@ import (
 )
 
 type Telegram struct {
+	Peak                       *float64 
 	Timestamp                  int64
 	ElectricityUsageLow        *float64
 	ElectricityUsageHigh       *float64
@@ -24,6 +25,7 @@ type Telegram struct {
 }
 
 type TelegramFormat struct {
+	KeyPeak                       string
 	KeyTimestamp                  string
 	KeyElectricityUsageLow        string
 	KeyElectricityUsageHigh       string
@@ -50,7 +52,15 @@ func parseInt(s string) int64 {
 	res, _ := strconv.ParseInt(strings.TrimLeft(parseTelegramValue(s), "0"), 0, 64)
 	return res
 }
-
+func parsePeakString(s string) *float64 {
+	// 1-0:1.6.0(240626103000S)(02.370*kW)
+        res, err := strconv.ParseFloat(strings.Replace(parseTelegramValue(s), "*kW", "", 1), 64)
+        if err != nil {
+                logrus.Debugln("Unable to convert peak string to float", err)
+                return nil
+        }
+        return &res
+}
 func parseTimestampString(s string) int64 {
 	// 0-0:1.0.0(181009214805S)
 	res, _ := strconv.ParseInt(strings.Replace(parseTelegramValue(s), "S", "", 1), 0, 64)
@@ -87,6 +97,7 @@ func ParseTelegram(format *TelegramFormat, telegramLines map[string]string) (Tel
 
 	if len(telegramLines) > 0 {
 		return Telegram{
+			Peak:                       parsePeakString(telegramLines[format.KeyPeak]),
 			Timestamp:                  parseTimestampString(telegramLines[format.KeyTimestamp]),
 			ElectricityUsageHigh:       parseElectricityString(telegramLines[format.KeyElectricityUsageHigh]),
 			ElectricityUsageLow:        parseElectricityString(telegramLines[format.KeyElectricityUsageLow]),

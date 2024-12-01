@@ -24,7 +24,11 @@ var usbSerial string
 
 var (
 	registry                   = prometheus.NewRegistry()
-	electricityUsageHighMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+	electricityPeakMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+	        Name: metricNamePrefix + "peak",
+	        Help: "Electricity peak",
+	})
+		electricityUsageHighMetric = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: metricNamePrefix + "usage_electricity_high",
 		Help: "Electricity usage high tariff",
 	})
@@ -67,6 +71,7 @@ var (
 )
 
 func init() {
+	registry.MustRegister(electricityPeakMetric)
 	registry.MustRegister(electricityUsageHighMetric)
 	registry.MustRegister(electricityUsageLowMetric)
 	registry.MustRegister(electricityReturnedHighMetric)
@@ -125,6 +130,9 @@ func main() {
 				continue
 			}
 			errorCount = 0
+			if telegram.Peak != nil {
+			        electricityPeakMetric.Set(*telegram.Peak)
+		        }
 			if telegram.ElectricityUsageHigh != nil {
 				electricityUsageHighMetric.Set(*telegram.ElectricityUsageHigh)
 			}
